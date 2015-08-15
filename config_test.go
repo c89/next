@@ -37,7 +37,7 @@ func TestGet(t *testing.T) {
 		t.Error("read json config fail")
 	}
 
-	str := cfg.Get("test.string")
+	str := cfg.String("test.string")
 	if str != "simplejson" {
 		t.Error("get config node fail")
 	}
@@ -52,7 +52,7 @@ func TestGet2(t *testing.T) {
 		t.Error("read json config fail")
 	}
 
-	str := cfg.Get("test.sub_obj.a")
+	str := cfg.String("test.sub_obj.a")
 	if str != "1" {
 		t.Error("get test.sub_obj.a fail")
 	}
@@ -68,7 +68,7 @@ func TestSet(t *testing.T) {
 	}
 
 	cfg.Set("test.sub_obj.b", "2")
-	str := cfg.Get("test.sub_obj.b")
+	str := cfg.String("test.sub_obj.b")
 	if str != "2" {
 		t.Error("get config node fail")
 	}

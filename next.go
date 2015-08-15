@@ -328,6 +328,12 @@ func Post(route string, handler interface{}) {
 	mainServer.Post(route, handler)
 }
 
+// Post adds a handler for the 'POST' http method in the main server.
+func Via(route string, handler interface{}) {
+	mainServer.Get(route, handler)
+	mainServer.Post(route, handler)
+}
+
 // Put adds a handler for the 'PUT' http method in the main server.
 func Put(route string, handler interface{}) {
 	mainServer.Put(route, handler)
