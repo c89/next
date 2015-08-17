@@ -26,7 +26,7 @@ func TestMysqlParse(t *testing.T) {
 var mysql *Mysql
 
 func init() {
-	mysql := NewMysql()
+	mysql = NewMysql()
 	mysql.Open("xcup:VX52XJbBvz7LMRQz@/xcup")
 }
 
