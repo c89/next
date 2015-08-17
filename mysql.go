@@ -30,7 +30,7 @@ func (mysql *Mysql) Open(dsn string) {
 }
 
 func (mysql *Mysql) Ping() error {
-	return mysql.Ping()
+	return mysql.Db.Ping()
 }
 
 func (mysql *Mysql) Close() {
