@@ -37,7 +37,7 @@ func (mysql *Mysql) Close() {
 	mysql.Db.Close()
 }
 
-func (mysql *Mysql) Query(args ...interface{}) (interface{}, error) {
+func (mysql *Mysql) Query(args ...interface{}) ([]interface{}, error) {
 	// Parse sql
 	q, param, err := mysql.parseQuery(args...)
 	if err != nil {
@@ -87,7 +87,7 @@ func (mysql *Mysql) Query(args ...interface{}) (interface{}, error) {
 		// Make map
 		r := make(map[string]interface{}, len(cols))
 		for i, val := range rbs {
-			r[cols[i]] = val
+			r[cols[i]] = string(val)
 		}
 		out = append(out, r)
 	}
@@ -144,7 +144,7 @@ func (mysql *Mysql) Row(args ...interface{}) (interface{}, error) {
 
 		// Make map
 		for i, val := range rbs {
-			out[cols[i]] = val
+			out[cols[i]] = string(val)
 		}
 	}
 

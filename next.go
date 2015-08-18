@@ -47,13 +47,20 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	// TODO Load config
-	return &Server{
+	server := &Server{
 		Config: NewConfig(),
 		routes: NewRoutes(),
 		Logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
 		Env:    map[string]interface{}{},
 	}
+
+	// Load default config if exists
+	file := "config.json"
+	if fileExists(file) {
+		server.Config.Load(file)
+	}
+
+	return server
 }
 
 // ServeHTTP is the interface method for Go's http server package
@@ -349,9 +356,14 @@ func Match(method string, route string, handler interface{}) {
 	mainServer.Match(route, method, handler)
 }
 
-//Adds a custom handler. Only for webserver mode. Will have no effect when running as FCGI or SCGI.
+// Adds a custom handler. Only for webserver mode. Will have no effect when running as FCGI or SCGI.
 func Handler(route string, method string, httpHandler http.Handler) {
 	mainServer.Handler(route, method, httpHandler)
+}
+
+// Default server
+func App() *Server {
+	return mainServer
 }
 
 var mainServer = NewServer()
