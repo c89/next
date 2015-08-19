@@ -234,11 +234,17 @@ func (mysql *Mysql) insert(table string, args ...interface{}) (interface{}, erro
 	maps := v.Elem().MapKeys()
 	feild := make([]string, len(maps))
 	bind := make([]string, len(maps))
-	param := make([]interface{}, len(maps))
+	param := make([]interface{}, 0)
 	for i, k := range maps {
-		feild[i] = fmt.Sprintf("`%s`", k)
-		bind[i] = "?"
-		param[i] = v.Elem().MapIndex(k).Interface()
+		f := strings.SplitN(k.String(), ":", 2)
+		if len(f) > 1 {
+			feild[i] = fmt.Sprintf("`%s`", f[0])
+			bind[i] = fmt.Sprintf("%s", v.Elem().MapIndex(k).Interface())
+		} else {
+			feild[i] = fmt.Sprintf("`%s`", k)
+			bind[i] = "?"
+			param = append(param, v.Elem().MapIndex(k).Interface())
+		}
 	}
 	q := fmt.Sprintf("INSERT INTO `%s`(%s) VALUES(%s);", table, strings.Join(feild, ","), strings.Join(bind, ","))
 

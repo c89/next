@@ -32,6 +32,26 @@ func (ctx *Context) WriteString(content string) {
 	ctx.ResponseWriter.Write([]byte(content))
 }
 
+// WriteJSON writes json data into the response object.
+func (ctx *Context) WriteJSON(code, msg string, data ...interface{}) {
+	ctx.ContentType("json")
+
+	json := NewJson()
+	if ctx.Server.Config.Bool("debug.profiler") {
+		json.Set("debug", ctx.Params)
+	}
+
+	json.Set("code", code)
+	json.Set("msg", msg)
+
+	if len(data) > 0 {
+		json.Set("data", data)
+	}
+	out, _ := json.Encode()
+
+	ctx.WriteString(string(out))
+}
+
 // Abort is a helper method that sends an HTTP header and an optional
 // body. It is useful for returning 4xx or 5xx errors.
 // Once it has been called, any return value from the handler will
