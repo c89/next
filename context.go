@@ -45,7 +45,7 @@ func (ctx *Context) WriteJSON(code, msg string, data ...interface{}) {
 	json.Set("msg", msg)
 
 	if len(data) > 0 {
-		json.Set("data", data)
+		json.Set("data", data[0])
 	}
 	out, _ := json.Encode()
 
