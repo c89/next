@@ -47,7 +47,14 @@ func (j *Json) EncodePretty() ([]byte, error) {
 
 // Implements the json.Marshaler interface.
 func (j *Json) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&j.data)
+	b, err := json.Marshal(&j.data)
+	log.Print(string(b))
+	if err == nil {
+		b = bytes.Replace(b, []byte("\\u003c"), []byte("<"), -1)
+		b = bytes.Replace(b, []byte("\\u003e"), []byte(">"), -1)
+		b = bytes.Replace(b, []byte("\\u0026"), []byte("&"), -1)
+	}
+	return b, err
 }
 
 // Set modifies `Json` map by `key` and `value`
