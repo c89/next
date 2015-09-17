@@ -191,7 +191,9 @@ func (mysql *Mysql) Rollback() error {
 
 func (mysql *Mysql) Commit() error {
 	if mysql.Tx != nil {
-		return mysql.Tx.Commit()
+		err := mysql.Tx.Commit()
+		mysql.Tx = nil
+		return err
 	}
 	return nil
 }
