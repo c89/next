@@ -184,7 +184,9 @@ func (mysql *Mysql) Begin() {
 
 func (mysql *Mysql) Rollback() error {
 	if mysql.Tx != nil {
-		return mysql.Tx.Rollback()
+		err := mysql.Tx.Rollback()
+		mysql.Tx = nil
+		return err
 	}
 	return nil
 }
