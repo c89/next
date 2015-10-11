@@ -23,6 +23,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -242,6 +243,26 @@ func (s *Server) routeHandler(req *http.Request, w http.ResponseWriter) (unused 
 			ctx.Params[k] = v[0]
 		}
 	}
+	if len(req.PostForm) > 0 {
+		for k, v := range req.PostForm {
+			ctx.Params[k] = v[0]
+		}
+	}
+
+	// Data in body
+	// ------------------
+	requestbody, _ := ioutil.ReadAll(req.Body)
+	req.Body.Close()
+	bf := bytes.NewBuffer(requestbody)
+	req.Body = ioutil.NopCloser(bf)
+
+	postArray := strings.Split(string(requestbody), "&")
+	for _, v := range postArray {
+		pair := strings.Split(v, "=")
+		ctx.Params[pair[0]] = pair[1]
+	}
+	// ------------------
+
 	defer s.logRequest(ctx, tm)
 
 	ctx.SetHeader("Date", webTime(tm), true)
