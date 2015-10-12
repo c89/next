@@ -28,6 +28,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"net/url"
 	"os"
 	"reflect"
 	"runtime"
@@ -256,10 +257,12 @@ func (s *Server) routeHandler(req *http.Request, w http.ResponseWriter) (unused 
 	bf := bytes.NewBuffer(requestbody)
 	req.Body = ioutil.NopCloser(bf)
 
-	postArray := strings.Split(string(requestbody), "&")
-	for _, v := range postArray {
-		pair := strings.Split(v, "=")
-		ctx.Params[pair[0]] = pair[1]
+	if len(requestbody) > 0 {
+		postArray := strings.Split(string(requestbody), "&")
+		for _, v := range postArray {
+			pair := strings.Split(v, "=")
+			ctx.Params[pair[0]], _ = url.QueryUnescape(pair[1])
+		}
 	}
 	// ------------------
 
