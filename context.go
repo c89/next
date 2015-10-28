@@ -189,5 +189,5 @@ func (ctx *Context) ClientIp() (string, error) {
 	if userIP == nil {
 		return "", fmt.Errorf("userip: %q is not IP:port", ctx.Request.RemoteAddr)
 	}
-	return string(userIP), nil
+	return userIP.String(), nil
 }
