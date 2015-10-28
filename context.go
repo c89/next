@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"mime"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -176,4 +177,17 @@ func (ctx *Context) GetSecureCookie(name string) (string, bool) {
 		return string(res), true
 	}
 	return "", false
+}
+
+func (ctx *Context) ClientIp() (string, error) {
+	ip, _, err := net.SplitHostPort(ctx.Request.RemoteAddr)
+	if err != nil {
+		return "", fmt.Errorf("userip: %q is not IP:port", ctx.Request.RemoteAddr)
+	}
+
+	userIP := net.ParseIP(ip)
+	if userIP == nil {
+		return "", fmt.Errorf("userip: %q is not IP:port", ctx.Request.RemoteAddr)
+	}
+	return string(userIP), nil
 }
