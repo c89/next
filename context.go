@@ -33,6 +33,12 @@ func (ctx *Context) WriteString(content string) {
 	ctx.ResponseWriter.Write([]byte(content))
 }
 
+// WriteXml writes string data into the response object.
+func (ctx *Context) WriteXml(content string) {
+	ctx.ContentType("text/xml")
+	ctx.ResponseWriter.Write([]byte(content))
+}
+
 // WriteJSON writes json data into the response object.
 func (ctx *Context) WriteJSON(code, msg string, data ...interface{}) {
 	ctx.ContentType("json")
