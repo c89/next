@@ -37,19 +37,22 @@ func (r *Redis) Pool(server string, pwd ...interface{}) {
 	}
 }
 
-func (r *Redis) Do(cmd string, args ...interface{}) (reply interface{}, err error) {
+func (r *Redis) Do(cmd string, args ...interface{}) (interface{}, error) {
 	conn := r.pool.Get()
 	defer conn.Close()
 
 	return conn.Do(cmd, args...)
 }
 
-func (r *Redis) String(cmd string, args ...interface{}) (reply string, err error) {
-	return redis.String(r.Do(cmd, args...))
-}
-func (r *Redis) Bool(cmd string, args ...interface{}) (reply bool, err error) {
+func (r *Redis) Bool(cmd string, args ...interface{}) (bool, error) {
 	return redis.Bool(r.Do(cmd, args...))
 }
-func (r *Redis) StringMap(cmd string, args ...interface{}) (reply map[string]string, err error) {
+func (r *Redis) String(cmd string, args ...interface{}) (string, error) {
+	return redis.String(r.Do(cmd, args...))
+}
+func (r *Redis) Strings(cmd string, args ...interface{}) ([]string, error) {
+	return redis.Strings(r.Do(cmd, args...))
+}
+func (r *Redis) StringMap(cmd string, args ...interface{}) (map[string]string, error) {
 	return redis.StringMap(r.Do(cmd, args...))
 }
