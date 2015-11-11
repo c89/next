@@ -58,7 +58,7 @@ func (t *Tcp) Pack(w io.Writer, data []byte) error {
 	}
 
 	// Size
-	err = binary.Write(w, binary.LittleEndian, int32(len(data)))
+	err = binary.Write(w, binary.LittleEndian, int32(len(data))+6)
 	if err != nil {
 		return errors.New("write size fail")
 	}
@@ -103,6 +103,7 @@ func (t *Tcp) Unpack(r io.Reader) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	size = size - 6
 	if size <= 0 || size > TcpMaxContent {
 		return nil, errors.New("data size is error")
 	}
@@ -163,6 +164,7 @@ func (t *Tcp) Pipe(conn *net.TCPConn) {
 	reader := bufio.NewReader(conn)
 	for {
 		body, err := t.Unpack(reader)
+		t.Logger.Println(body)
 		if err != nil {
 			if err == io.EOF {
 				return
