@@ -128,21 +128,14 @@ func (t *Tcp) Unpack(r io.Reader) ([]byte, error) {
 	return buf, nil
 }
 
-func (t *Tcp) Run(addr string) {
-	tcpAddr, _ := net.ResolveTCPAddr("tcp", addr)
-	tcpListener, _ := net.ListenTCP("tcp", tcpAddr)
-	defer tcpListener.Close()
-
-	t.Logger.Printf("next tcp serving %s\n", addr)
-	for {
-		tcpConn, err := tcpListener.AcceptTCP()
-		if err != nil {
-			continue
-		}
-
-		t.Logger.Printf("connected: %s\n", tcpConn.RemoteAddr().String())
-		go t.Pipe(tcpConn)
+// Get the integer Unix file descriptor referencing the open file
+func (t *Tcp) Fd(conn *net.TCPConn) (int, error) {
+	f, err := conn.File()
+	if err != nil {
+		return -1, err
 	}
+
+	return int(f.Fd()), nil
 }
 
 func (t *Tcp) Pipe(conn *net.TCPConn) {
@@ -164,7 +157,7 @@ func (t *Tcp) Pipe(conn *net.TCPConn) {
 	reader := bufio.NewReader(conn)
 	for {
 		body, err := t.Unpack(reader)
-		t.Logger.Println(body)
+		t.Logger.Printf("%x", body)
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -172,18 +165,28 @@ func (t *Tcp) Pipe(conn *net.TCPConn) {
 			t.Logger.Print(err)
 		}
 
-		t.handler(conn, body)
+		// Filter heart pack
+		if string(body) != "hello" {
+			t.handler(conn, body)
+		}
 	}
 }
 
-// Get the integer Unix file descriptor referencing the open file
-func (t *Tcp) Fd(conn *net.TCPConn) (int, error) {
-	f, err := conn.File()
-	if err != nil {
-		return -1, err
-	}
+func (t *Tcp) Run(addr string) {
+	tcpAddr, _ := net.ResolveTCPAddr("tcp", addr)
+	tcpListener, _ := net.ListenTCP("tcp", tcpAddr)
+	defer tcpListener.Close()
 
-	return int(f.Fd()), nil
+	t.Logger.Printf("next tcp serving %s\n", addr)
+	for {
+		tcpConn, err := tcpListener.AcceptTCP()
+		if err != nil {
+			continue
+		}
+
+		t.Logger.Printf("connected: %s\n", tcpConn.RemoteAddr().String())
+		go t.Pipe(tcpConn)
+	}
 }
 
 // Post adds a handler for the 'Via' TCP method for tcp.
