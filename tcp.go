@@ -128,6 +128,61 @@ func (t *Tcp) Unpack(r io.Reader) ([]byte, error) {
 	return buf, nil
 }
 
+func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
+	ctx := TcpContext{
+		Params: make(map[string]string),
+		Tcp:    t,
+		conn:   conn,
+	}
+
+	// Read json body
+	json := NewJson()
+	json.Load(body)
+	requestPath := json.Get("method").MustString()
+
+	route := t.routes.Match(requestPath, "VIA")
+	if route == nil {
+		ctx.WriteJSON("404", "request method not found")
+		return
+	}
+
+	data, error := json.Get("data").Map()
+	if error != nil {
+		ctx.WriteJSON("403", "data is not map[string]string")
+		return
+	}
+	if len(data) > 0 {
+		for key, val := range data {
+			v, err := val.(string)
+			if !err {
+				ctx.WriteJSON("403", "data is not map[string]string")
+				return
+			}
+			ctx.Params[key] = v
+		}
+	}
+
+	cr := route.cr
+
+	var args []reflect.Value
+	handlerType := route.handler.Type()
+	if requiresTcpContext(handlerType) {
+		args = append(args, reflect.ValueOf(&ctx))
+	}
+	t.Logger.Print(args)
+
+	match := cr.FindStringSubmatch(requestPath)
+	for _, arg := range match[1:] {
+		args = append(args, reflect.ValueOf(arg))
+	}
+
+	_, err := t.safelyCall(route.handler, args)
+	if err != nil {
+		//there was an error or panic while calling the handler
+		ctx.WriteJSON("500", "Server Error")
+	}
+}
+
 // Get the integer Unix file descriptor referencing the open file
 func (t *Tcp) Fd(conn *net.TCPConn) (int, error) {
 	f, err := conn.File()
@@ -157,7 +212,6 @@ func (t *Tcp) Pipe(conn *net.TCPConn) {
 	reader := bufio.NewReader(conn)
 	for {
 		body, err := t.Unpack(reader)
-		t.Logger.Printf("%x", body)
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -165,10 +219,12 @@ func (t *Tcp) Pipe(conn *net.TCPConn) {
 			t.Logger.Print(err)
 		}
 
+		t.Logger.Printf("%v", body)
 		// Filter heart pack
 		if string(body) != "hello" {
 			t.handler(conn, body)
 		}
+		reader.Reset(conn)
 	}
 }
 
@@ -218,41 +274,25 @@ func (t *Tcp) safelyCall(function reflect.Value, args []reflect.Value) (resp []r
 	return function.Call(args), nil
 }
 
-func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
-	ctx := TcpContext{
-		Params: make(map[string]string),
-		Tcp:    t,
-		conn:   conn,
+// requiresContext determines whether 'handlerType' contains
+// an argument to 'web.Ctx' as its first argument
+func requiresTcpContext(handlerType reflect.Type) bool {
+	//if the method doesn't take arguments, no
+	if handlerType.NumIn() == 0 {
+		return false
 	}
 
-	// Read json body
-	json := NewJson()
-	json.Load(body)
-	requestPath := json.Get("method").MustString()
-
-	route := t.routes.Match(requestPath, "VIA")
-	if route == nil {
-		ctx.WriteJSON("404", "Method not found")
-		return
+	//if the first argument is not a pointer, no
+	a0 := handlerType.In(0)
+	if a0.Kind() != reflect.Ptr {
+		return false
 	}
-	cr := route.cr
-
-	var args []reflect.Value
-	handlerType := route.handler.Type()
-	if requiresContext(handlerType) {
-		args = append(args, reflect.ValueOf(&ctx))
+	//if the first argument is a context, yes
+	if a0.Elem() == reflect.TypeOf(TcpContext{}) {
+		return true
 	}
 
-	match := cr.FindStringSubmatch(requestPath)
-	for _, arg := range match[1:] {
-		args = append(args, reflect.ValueOf(arg))
-	}
-
-	_, err := t.safelyCall(route.handler, args)
-	if err != nil {
-		//there was an error or panic while calling the handler
-		ctx.WriteJSON("500", "Server Error")
-	}
+	return false
 }
 
 // --------
