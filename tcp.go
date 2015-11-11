@@ -21,7 +21,7 @@ type Tcp struct {
 
 const (
 	TcpHead = 0xAA
-	TcpTail = 0x55
+	TcpTail = 0x0A
 )
 
 func NewTcp() *Tcp {
@@ -272,5 +272,4 @@ func (ctx *TcpContext) WriteJSON(code, msg string, data ...interface{}) {
 	out, _ := json.Encode()
 
 	ctx.Tcp.Pack(ctx.conn, out)
-	ctx.conn.Write([]byte{'\n'})
 }
