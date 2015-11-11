@@ -20,8 +20,9 @@ type Tcp struct {
 }
 
 const (
-	TcpHead = 0xAA
-	TcpTail = 0x0A
+	TcpHead       = 0xAA
+	TcpTail       = 0x0A
+	TcpMaxContent = 2 << 10
 )
 
 func NewTcp() *Tcp {
@@ -57,7 +58,7 @@ func (t *Tcp) Pack(w io.Writer, data []byte) error {
 	}
 
 	// Size
-	err = binary.Write(w, binary.BigEndian, int32(len(data)))
+	err = binary.Write(w, binary.LittleEndian, int32(len(data)))
 	if err != nil {
 		return errors.New("write size fail")
 	}
@@ -98,9 +99,12 @@ func (t *Tcp) Unpack(r io.Reader) ([]byte, error) {
 
 	// message size
 	var size int32
-	err = binary.Read(r, binary.BigEndian, &size)
+	err = binary.Read(r, binary.LittleEndian, &size)
 	if err != nil {
 		return nil, err
+	}
+	if size <= 0 || size > TcpMaxContent {
+		return nil, errors.New("data size is error")
 	}
 
 	// message binary data
@@ -159,15 +163,14 @@ func (t *Tcp) Pipe(conn *net.TCPConn) {
 	reader := bufio.NewReader(conn)
 	for {
 		body, err := t.Unpack(reader)
-		if err == io.EOF {
-			return
+		if err != nil {
+			if err == io.EOF {
+				return
+			}
+			t.Logger.Print(err)
 		}
 
-		if err != nil {
-			t.Logger.Print(err)
-		} else {
-			t.handler(conn, body)
-		}
+		t.handler(conn, body)
 	}
 }
 
