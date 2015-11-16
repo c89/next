@@ -13,7 +13,7 @@ import (
 )
 
 type Tcp struct {
-	Conn   map[int]*net.TCPConn
+	Conn   map[string]*net.TCPConn
 	Config *Config
 	Logger *log.Logger
 	routes *Routes
@@ -27,7 +27,7 @@ const (
 
 func NewTcp() *Tcp {
 	tcp := &Tcp{
-		Conn:   make(map[int]*net.TCPConn),
+		Conn:   make(map[string]*net.TCPConn),
 		Config: NewConfig(),
 		Logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
 		routes: NewRoutes(),
@@ -132,6 +132,7 @@ func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
 	ctx := TcpContext{
 		Params: make(map[string]string),
 		Tcp:    t,
+		Fd:     t.Fd(conn),
 		conn:   conn,
 	}
 
@@ -184,23 +185,14 @@ func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
 }
 
 // Get the integer Unix file descriptor referencing the open file
-func (t *Tcp) Fd(conn *net.TCPConn) (int, error) {
-	f, err := conn.File()
-	if err != nil {
-		return -1, err
-	}
-
-	return int(f.Fd()), nil
+func (t *Tcp) Fd(conn *net.TCPConn) string {
+	return conn.RemoteAddr().String()
 }
 
 func (t *Tcp) Pipe(conn *net.TCPConn) {
-	fd, err := t.Fd(conn)
-	if err != nil {
-		t.Logger.Printf("connect err: %s\n", err)
-		return
-	}
+	fd := t.Fd(conn)
 	defer func() {
-		t.Logger.Printf("disconnected: %s\n", conn.RemoteAddr().String())
+		t.Logger.Printf("disconnected: %s\n", fd)
 		conn.Close()
 		delete(t.Conn, fd)
 	}()
@@ -248,6 +240,19 @@ func (t *Tcp) Run(addr string) {
 // Post adds a handler for the 'Via' TCP method for tcp.
 func (t *Tcp) Via(route string, handler interface{}) {
 	t.routes.Add(route, "VIA", handler)
+}
+
+func (t *Tcp) WriteJSON(conn *net.TCPConn, code, msg string, data ...interface{}) {
+	json := NewJson()
+	json.Set("code", code)
+	json.Set("msg", msg)
+
+	if len(data) > 0 {
+		json.Set("data", data[0])
+	}
+	out, _ := json.Encode()
+
+	t.Pack(conn, out)
 }
 
 // safelyCall invokes `function` in recover block
@@ -301,6 +306,7 @@ func requiresTcpContext(handlerType reflect.Type) bool {
 type TcpContext struct {
 	Params map[string]string
 	Tcp    *Tcp
+	Fd     string
 	conn   *net.TCPConn
 }
 
