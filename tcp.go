@@ -317,6 +317,11 @@ func (ctx *TcpContext) WriteJSON(code, msg string, data ...interface{}) {
 		json.Set("debug", ctx.Params)
 	}
 
+	// Back client request version
+	if seq, ok := ctx.Params["seq"]; ok {
+		json.Set("seq", seq)
+	}
+
 	json.Set("code", code)
 	json.Set("msg", msg)
 
