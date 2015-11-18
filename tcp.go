@@ -2,14 +2,17 @@ package next
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
 	"reflect"
 	"runtime"
+	"time"
 )
 
 type Tcp struct {
@@ -129,21 +132,24 @@ func (t *Tcp) Unpack(r io.Reader) ([]byte, error) {
 }
 
 func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
-	ctx := TcpContext{
-		Params: make(map[string]string),
-		Tcp:    t,
-		Fd:     t.Fd(conn),
-		conn:   conn,
-	}
-
 	// Read json body
 	json := NewJson()
 	json.Load(body)
 
 	// Add seq flag from client
-	ctx.Params["seq"] = json.Get("seq").MustString()
-
 	requestPath := json.Get("method").MustString()
+
+	ctx := TcpContext{
+		Method: requestPath,
+		Params: make(map[string]string),
+		Tcp:    t,
+		Fd:     t.Fd(conn),
+		conn:   conn,
+	}
+	tm := time.Now().UTC()
+	defer t.logRequest(ctx, tm)
+
+	ctx.Params["seq"] = json.Get("seq").MustString()
 	route := t.routes.Match(requestPath, "VIA")
 	if route == nil {
 		ctx.WriteJSON("404", "request method not found")
@@ -174,7 +180,6 @@ func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
 	if requiresTcpContext(handlerType) {
 		args = append(args, reflect.ValueOf(&ctx))
 	}
-	t.Logger.Print(args)
 
 	match := cr.FindStringSubmatch(requestPath)
 	for _, arg := range match[1:] {
@@ -215,7 +220,6 @@ func (t *Tcp) Pipe(conn *net.TCPConn) {
 			t.Logger.Print(err)
 		}
 
-		t.Logger.Printf("%v", body)
 		// Filter heart pack
 		if string(body) != "hello" {
 			t.handler(conn, body)
@@ -283,6 +287,21 @@ func (t *Tcp) safelyCall(function reflect.Value, args []reflect.Value) (resp []r
 	return function.Call(args), nil
 }
 
+func (t *Tcp) logRequest(ctx TcpContext, sTime time.Time) {
+	//log the request
+	var logEntry bytes.Buffer
+
+	duration := time.Now().Sub(sTime)
+
+	fmt.Fprintf(&logEntry, "%s - \033[32;1m TCP %s\033[0m - %v", ctx.Fd, ctx.Method, duration)
+
+	if len(ctx.Params) > 0 {
+		fmt.Fprintf(&logEntry, " - \033[37;1mParams: %v\033[0m\n", ctx.Params)
+	}
+
+	ctx.Tcp.Logger.Print(logEntry.String())
+}
+
 // requiresContext determines whether 'handlerType' contains
 // an argument to 'web.Ctx' as its first argument
 func requiresTcpContext(handlerType reflect.Type) bool {
@@ -308,6 +327,7 @@ func requiresTcpContext(handlerType reflect.Type) bool {
 // Tcp Context
 // --------
 type TcpContext struct {
+	Method string
 	Params map[string]string
 	Tcp    *Tcp
 	Fd     string
