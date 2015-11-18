@@ -146,6 +146,7 @@ func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
 		ctx.WriteJSON("404", "request method not found")
 		return
 	}
+	ctx.Params["method"] = requestPath
 
 	data, error := json.Get("data").Map()
 	if error != nil {
@@ -320,6 +321,10 @@ func (ctx *TcpContext) WriteJSON(code, msg string, data ...interface{}) {
 	// Back client request version
 	if seq, ok := ctx.Params["seq"]; ok {
 		json.Set("seq", seq)
+	}
+	// Back request method
+	if method, ok := ctx.Params["method"]; ok {
+		json.Set("method", method)
 	}
 
 	json.Set("code", code)
