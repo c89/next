@@ -139,8 +139,11 @@ func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
 	// Read json body
 	json := NewJson()
 	json.Load(body)
-	requestPath := json.Get("method").MustString()
 
+	// Add seq flag from client
+	ctx.Params["seq"] = json.Get("seq").MustString()
+
+	requestPath := json.Get("method").MustString()
 	route := t.routes.Match(requestPath, "VIA")
 	if route == nil {
 		ctx.WriteJSON("404", "request method not found")
