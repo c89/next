@@ -16,10 +16,11 @@ import (
 )
 
 type Tcp struct {
-	Conn   map[string]*net.TCPConn
-	Config *Config
-	Logger *log.Logger
-	routes *Routes
+	Conn       map[string]*net.TCPConn
+	Config     *Config
+	Logger     *log.Logger
+	routes     *Routes
+	middleware []reflect.Value
 }
 
 const (
@@ -30,10 +31,11 @@ const (
 
 func NewTcp() *Tcp {
 	tcp := &Tcp{
-		Conn:   make(map[string]*net.TCPConn),
-		Config: NewConfig(),
-		Logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
-		routes: NewRoutes(),
+		Conn:       make(map[string]*net.TCPConn),
+		Config:     NewConfig(),
+		Logger:     log.New(os.Stdout, "", log.Ldate|log.Ltime),
+		routes:     NewRoutes(),
+		middleware: make([]reflect.Value, 0),
 	}
 
 	// Load default config if exists
@@ -231,6 +233,17 @@ func (t *Tcp) Run(addr string) {
 	defer tcpListener.Close()
 
 	t.Logger.Printf("next tcp serving %s\n", addr)
+
+	// Run middleware
+	go func() {
+		for _, v := range t.middleware {
+			var args []reflect.Value
+			args = append(args, reflect.ValueOf(t))
+			t.safelyCall(v, args)
+		}
+	}()
+
+	// Run tcp listener
 	for {
 		tcpConn, err := tcpListener.AcceptTCP()
 		if err != nil {
@@ -239,6 +252,18 @@ func (t *Tcp) Run(addr string) {
 
 		t.Logger.Printf("connected: %s\n", tcpConn.RemoteAddr().String())
 		go t.Pipe(tcpConn)
+	}
+}
+
+// Post adds a handler for the 'Via' TCP method for tcp.
+func (t *Tcp) Middleware(handler interface{}) {
+	switch handler.(type) {
+	case reflect.Value:
+		fv := handler.(reflect.Value)
+		t.middleware = append(t.middleware, fv)
+	default:
+		fv := reflect.ValueOf(handler)
+		t.middleware = append(t.middleware, fv)
 	}
 }
 

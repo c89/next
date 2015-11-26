@@ -94,9 +94,14 @@ func RunTcp(addr string) {
 	mainTcp.Run(addr)
 }
 
-// Adds a handler for tcp method in the main server.
+// Add a handler for tcp method in the main server.
 func ViaTcp(route string, handler interface{}) {
 	mainTcp.Via(route, handler)
+}
+
+// Add a plugin
+func MiddlewareTcp(handler interface{}) {
+	mainTcp.Middleware(handler)
 }
 
 // Default Tcp server
