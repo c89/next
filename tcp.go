@@ -157,19 +157,16 @@ func (t *Tcp) handler(conn *net.TCPConn, body []byte) {
 	}
 	ctx.Params["method"] = requestPath
 
-	data, error := json.Get("data").Map()
-	if error != nil {
-		ctx.WriteJSON("403", "data is not map[string]string")
-		return
-	}
-	if len(data) > 0 {
-		for key, val := range data {
-			v, err := val.(string)
-			if !err {
-				ctx.WriteJSON("403", "data is not map[string]string")
-				return
+	if data, err := json.Get("data").Map(); err == nil {
+		if len(data) > 0 {
+			for key, val := range data {
+				v, err := val.(string)
+				if !err {
+					ctx.WriteJSON("403", "data is not map[string]string")
+					return
+				}
+				ctx.Params[key] = v
 			}
-			ctx.Params[key] = v
 		}
 	}
 
