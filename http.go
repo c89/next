@@ -259,7 +259,9 @@ func (s *Server) routeHandler(req *http.Request, w http.ResponseWriter) (unused 
 		postArray := strings.Split(string(requestbody), "&")
 		for _, v := range postArray {
 			pair := strings.Split(v, "=")
-			ctx.Params[pair[0]], _ = url.QueryUnescape(pair[1])
+			if len(pair) > 1 {
+				ctx.Params[pair[0]], _ = url.QueryUnescape(pair[1])
+			}
 		}
 	}
 	// ------------------
