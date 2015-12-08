@@ -264,6 +264,11 @@ func (s *Server) routeHandler(req *http.Request, w http.ResponseWriter) (unused 
 			}
 		}
 	}
+	if resp, err := NewXml().ToMap(req.Body); err == nil {
+		for k, v := range resp {
+			ctx.Params[k] = v
+		}
+	}
 	// ------------------
 
 	defer s.logRequest(ctx, tm)
