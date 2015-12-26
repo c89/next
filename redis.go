@@ -56,3 +56,6 @@ func (r *Redis) Strings(cmd string, args ...interface{}) ([]string, error) {
 func (r *Redis) StringMap(cmd string, args ...interface{}) (map[string]string, error) {
 	return redis.StringMap(r.Do(cmd, args...))
 }
+func (r *Redis) Int64(cmd string, args ...interface{}) (int64, error) {
+	return redis.Int64(r.Do(cmd, args...))
+}
