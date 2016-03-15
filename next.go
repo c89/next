@@ -110,3 +110,26 @@ func AppTcp() *Tcp {
 }
 
 var mainTcp = NewTcp()
+
+// -------------
+// Run starts the web application and serves Tcp service for the main server.
+func RunDuo(addr string) {
+	mainDuo.Run(addr)
+}
+
+// Add a handler for tcp method in the main server.
+func ViaDuo(route string, handler interface{}) {
+	mainDuo.Via(route, handler)
+}
+
+// Add a plugin
+func MiddlewareDuo(handler interface{}) {
+	mainDuo.Middleware(handler)
+}
+
+// Default Duo server
+func AppDuo() *Duo {
+	return mainDuo
+}
+
+var mainDuo = NewDuo()
