@@ -358,6 +358,10 @@ type TcpContext struct {
 
 // WriteJSON writes json data into the response object.
 func (ctx *TcpContext) WriteJSON(code, msg string, data ...interface{}) {
+	if ctx.conn == nil {
+		return
+	}
+
 	json := NewJson()
 	if ctx.Tcp.Config.Bool("debug.profiler") {
 		json.Set("debug", ctx.Params)
