@@ -194,8 +194,14 @@ func (t *Duo) Pipe(conn *net.TCPConn) {
 			if err == io.EOF {
 				return
 			}
+			if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+				return
+			}
 			t.Logger.Print(err)
 		}
+
+		conn.SetReadDeadline(time.Now().Add(20 * time.Second))
+
 		if len(body) == 0 {
 			continue
 		}
