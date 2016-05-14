@@ -24,7 +24,7 @@ import (
 	"net/http"
 )
 
-const VERSION = "0.0.1"
+const VERSION = "0.0.2"
 
 // Process invokes the main server's routing system.
 func Process(c http.ResponseWriter, req *http.Request) {
