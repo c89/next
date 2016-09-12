@@ -63,11 +63,8 @@ func (t *Duo) Pack(w io.Writer, data []byte) error {
 	out = append(out, data...)
 	// Tail
 	out = append(out, t.crc(data))
-	for i := 0; i < 2; i++ {
-		if _, err := w.Write(out); err != nil {
-			return errors.New("write fail")
-		}
-		time.Sleep(200 * time.Millisecond)
+	if _, err := w.Write(out); err != nil {
+		return errors.New("write fail")
 	}
 
 	return nil
